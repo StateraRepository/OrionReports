@@ -1,0 +1,794 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="TheHunter">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=OrionSrv02;Initial Catalog=TheHunter</ConnectString>
+      </ConnectionProperties>
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <rd:DataSourceID>a22cc988-714c-453a-9fb3-bb2f8f22cf41</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="AuditLocationRollup">
+      <Query>
+        <DataSourceName>TheHunter</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@cID">
+            <Value>=Parameters!cID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>Declare @clientID int
+
+Set @clientID = @cID
+
+Declare @sql varchar(Max)
+
+
+set @sql = '
+
+
+		Declare @AggResults Table(Source varchar(20),
+	ClientID int, ClientName varchar(100), ClIsInactive bit,  ClientLocationName varchar(100), LocIsInactive bit, 
+	AuditLocationStartYear int,  PhysicalAddressCity varchar(100),
+	StateProvinceCode char(2), ClientLocationID int, CombinedLocations varchar(20), employeeCount int,  details nvarchar(400)
+	)
+
+	Declare @Clients Table(Source varchar(20),
+	ClientID int, ClientName varchar(100), ClIsInactive bit,  ClientLocationName varchar(100), LocIsInactive bit, PhysicalAddressCity varchar(100),
+	StateProvinceCode char(2), ClientLocationID int, AuditLocationStartDate datetime, AuditLocationEndDate datetime,
+	employeeCount int, AuditTypeCode varchar(20), WorkEffort int, StandardName varchar(20))
+
+	Declare @Results Table(Source varchar(20),
+	ClientID int, ClientName varchar(100), ClIsInactive bit,  ClientLocationName varchar(100), LocIsInactive bit, PhysicalAddressCity varchar(100),
+	StateProvinceCode char(2), ClientLocationID int, CombinedLocations varchar(20), employeeCount int, AuditLocationStartYear int, 
+	AuditLocationStartMonth int, WorkEffort int, AuditTypeCode varchar(20), details nvarchar(400)
+	)
+
+
+
+	Insert into @Clients
+	SELECT ''Hunter'', c.ClientID, CASE WHEN c.IsInactive = 0 THEN c.ClientName ELSE c.ClientName + ''(***Inactive***)'' END as ClientName , 
+	c.IsInactive as ClIsInactive, CASE WHEN cl.IsInactive = 0 THEN cl.ClientLocationName ELSE cl.ClientLocationName + ''(***Inactive***)'' END  as ClientLocationName, 
+	cl.IsInactive as LocIsInactive, cl.PhysicalAddressCity, sp.StateProvinceCode, alr.ClientLocationId as ClientLocationId, alr.AuditLocationStartDate, 
+	alr.AuditLocationEndDate, cl.EmployeeCount, at.AuditTypeCode, ala.WorkEffort, s.StandardName
+	FROM auditlocationrollup alr
+	left join clientlocation cl on alr.clientlocationid=cl.clientlocationid
+	left join StateProvince sp on sp.StateProvinceId=cl.PhysicalAddressStateProvinceId
+	left join auditlocationstandard als on als.auditlocationid=alr.auditlocationid
+	left join auditlocationauditor ala on ala.auditlocationid=alr.auditlocationid
+	left join standard s on als.standardid=s.standardid
+	left join audittype at on at.audittypeid=als.audittypeid
+	left join client c on c.clientid=cl.clientid
+	WHERE alr.AuditLocationStartDate is not null 
+	AND als.auditlocationid is not null
+	AND alr.AuditLocationStartDate &gt;= Cast(''1/1/'' + Cast(year(getdate()-3) as varchar) as date)
+	AND c.ClientID = ' + CAST(@clientID as varchar) + '
+
+	UNION
+
+	select *
+	from Openquery([OrionSQL], ''
+	SELECT distinct ''''BMS'''' as Source, co.CompanyIDNumber as ClientID, CASE WHEN co.Inactive = 0 THEN co.CompanyName ELSE co.CompanyName + ''''(***Inactive***)'''' END as ClientName, 
+	co.Inactive as ClIsInactive, CASE WHEN st.Inactive = 0 THEN st.SiteName ELSE st.SiteName + ''''(***Inactive***)'''' END as ClientLocationName, 
+	st.Inactive as LocIsInactive, PriCity as PhysicalAddresscity, rg.RegionCode as StateProvinceCode,  st.SiteIDNumber as ClientLocationId, 
+	a.SchdStartDate as AuditLocationStartDate, a.ActvCompleteDate as AuditLocationEndDate, 
+	st.EmployeeCount, at.ActivityTypeIDCode as AuditTypeCode, IsNull(aa.SchdAuditorDays, 0) as WorkEffort,
+				  IsNull(CASE
+								 WHEN cert.certcomplete = ''''1''''
+								 THEN v.Version
+								 ELSE revV.Version
+								 END, (Select top 1 Version from ori.Activity.ActivityVersion actV inner join ori.Standard.Version v ON actV.VersionID = v.VersionID where actV.ActivityID = a.ActivityID)) as StandardName
+
+	FROM ori.Activity.Activity a
+	inner join ori.Activity.ActivityType at on a.ActivityTypeID = at.activityTypeID
+	inner join ori.Company.Site st on a.SiteID = st.SiteID
+	inner join ori.Company.Company co on a.companyID = co.CompanyID
+	inner join ori.Partner.Partner p on co.PartnerID = p.PartnerID and p.PartnerCode = ''''ORI'''' 
+	inner join ori.Common.Region rg on st.PriRegionID = rg.RegionID
+	left outer join ori.Activity.ActivityAuditor aa on a.ActivityID = aa.ActivityID
+	left outer join ori.Auditor.AuditRole ar on aa.AuditRoleID = ar.AuditRoleID and ar.Role = ''''Team Leader''''
+	inner join ori.Activity.ActivityStandard astd on a.ActivityID = astd.ActivityID
+	left outer join ori.Certificate.CertificateActivity ca on a.ActivityID = ca.ActivityID
+	left outer join ori.Certificate.Certificate cert on ca.CertificateID = cert.CertificateID and cert.inactive = ''''0'''' and cert.certcomplete = ''''1''''
+	left join ori.standard.version v on v.VersionId=Cert.VersionId
+	left join ori.certificate.revision rev on rev.certificateid=Cert.certificateid and rev.RevisionSuperceded=''''0''''
+	left join ori.standard.version revV on revV.VersionId=rev.VersionId 
+	WHERE a.SchdStartDate &gt; CAST(''''1/1/'''' + CAST(year(getDate())-3 as varchar) as DateTime)
+	AND a.SchdStartDate &lt; ''''2/28/2015''''
+	AND  at.activitytypeidCode &lt;&gt; ''''MPO''''
+	AND (a.inactive = ''''0'''' or a.AudtCompleteDate is not null)
+	AND CompanyIDNumber = ' + CAST(@clientID as varchar) +'''
+
+ ) 
+ 
+ '
+
+ set @sql = @sql + '
+ 	INSERT INTO @Clients
+	SELECT ''Hunter'', c.ClientID, c.ClientName, c.IsInactive, cl.ClientLocationName, cl.IsInactive, cl.PhysicalAddressCity, sp.StateProvinceCode, 
+	cl.ClientLocationId as ClientLocationId, CAST(''1/1/'' + CAST(year(getDate())-3 as varchar) as DateTime) as AuditLocationStartDate, 
+	NULL as AuditLocationEndDate, cl.EmployeeCount, NULL as AuditTypeCode, NULL as WorkEffort, NULL as StandardName
+	FROM client c 
+	inner join  clientlocation cl on c.ClientId=cl.ClientId
+	inner join StateProvince sp on sp.StateProvinceId=cl.PhysicalAddressStateProvinceId
+	WHERE c.ClientID = (select distinct clientID from @Clients)
+	AND cl.ClientLocationName not in (select distinct ClientLocationName from @Clients)
+
+	insert into @Results
+	select min(c.Source), ClientID, ClientName, ClIsInactive, ClientLocationName, LocIsInactive, PhysicalAddressCity, StateProvinceCode,  
+	min(ClientLocationId) as clientLocationID,
+	IsNull((select CAST(SiteIDNumber as varchar) from OrionSQL.ORI.Company.Site Where SiteName = Replace(c.ClientLocationName,''(***Inactive***)'','''')), '''') + '' / '' +
+	IsNull((select CAST(ClientLocationID as varchar) from ClientLocation Where ClientLocationName = Replace(c.ClientLocationName,''(***Inactive***)'','''')), '''') as CombinedLocations,
+	employeeCount, Year(AuditLocationStartDate), Month(AuditLocationStartDate), WorkEffort, c.AuditTypeCode, Null as details
+	from @clients c
+	Group by  ClientID, ClientName, ClIsInactive, ClientLocationName, LocIsInactive, PhysicalAddressCity, StateProvinceCode, 
+	EmployeeCount, Year(AuditLocationStartDate), Month(AuditLocationStartDate), WorkEffort, c.AuditTypeCode
+	order by ClientID,  Year(AuditLocationStartDate), Month(AuditLocationStartDate), c.AuditTypeCode
+
+
+	Insert into @AggResults
+	Select distinct r.Source, r.ClientID, r.ClientName, r.ClIsInactive, r.ClientLocationName, r.LocIsInactive,  r.AuditLocationStartYear,  
+	r.PhysicalAddressCity, r.StateProvinceCode, r.ClientLocationID, r.CombinedLocations, r.employeeCount,
+		r.AuditTypeCode  + ''newline'' +  substring(
+			(	
+				Select distinct ''newline'' + c.StandardName   AS [text()]
+				From @Clients c
+				Where c.ClientLocationID = r.ClientLocationID and Year(c.AuditLocationStartDate) = r.AuditLocationStartYear and Month(c.AuditLocationStartDate) = r.AuditLocationStartMonth
+				For XML PATH ('''')
+			), 8, 1000)   + ''newline'' + '' ('' + convert(char(3), Cast(Cast(r.AuditLocationStartMonth as varchar) + ''/1/2015'' as datetime), 0) + '', '' + CAST(max(r.WorkEffort) as varchar) + CASE WHEN max(r.WorkEffort) &gt; 1 THEN '' Days)'' ELSE '' Day)'' END [Standards]
+		From @Results r
+		group by r.Source, r.ClientID, r.ClientName, r.ClIsInactive, r.ClientLocationName, r.LocIsInactive,  r.AuditLocationStartYear,  r.AuditLocationStartMonth,
+		r.PhysicalAddressCity, r.StateProvinceCode, r.ClientLocationID, r.CombinedLocations, r.employeeCount, r.AuditTypeCode
+
+
+	Select distinct r.Source, r.ClientID, r.ClientName, r.ClIsInactive, r.ClientLocationName, r.LocIsInactive,  r.AuditLocationStartYear, 
+	r.PhysicalAddressCity, r.StateProvinceCode, r.ClientLocationID, r.CombinedLocations, r.employeeCount,
+		replace(substring(
+			(	
+				Select distinct  ''newline'' + ''newline'' + a.details   AS [text()]
+				From @AggResults a
+				Where a.ClientLocationID = r.ClientLocationID and a.AuditLocationStartYear = r.AuditLocationStartYear
+				--ORDER BY  ''newline'' + a.details 
+				For XML PATH ('''')
+			), 15, 1000), ''newline'', char(13) + char(10) )  [Standards]
+		From @AggResults r
+
+
+ '
+
+   --select @sql
+   exec(@sql)</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="ClientID">
+          <DataField>ClientID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Source">
+          <DataField>Source</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientName">
+          <DataField>ClientName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientLocationName">
+          <DataField>ClientLocationName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClIsInactive">
+          <DataField>ClIsInactive</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="PhysicalAddressCity">
+          <DataField>PhysicalAddressCity</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="StateProvinceCode">
+          <DataField>StateProvinceCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AuditLocationStartYear">
+          <DataField>AuditLocationStartYear</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="LocIsInactive">
+          <DataField>LocIsInactive</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="ClientLocationId">
+          <DataField>ClientLocationID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="EmployeeCount">
+          <DataField>employeeCount</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="CombinedLocations">
+          <DataField>CombinedLocations</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Standards">
+          <DataField>Standards</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="Clients">
+      <Query>
+        <DataSourceName>TheHunter</DataSourceName>
+        <CommandText>SELECT ClientName, CAST(ClientId AS varchar) + ' - ' + ClientName AS ClientIDAndName, ClientId
+FROM     Client
+WHERE  (LocationSampling = 1) AND (IsInactive = 0)
+ORDER BY ClientName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ClientName">
+          <DataField>ClientName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientID">
+          <DataField>ClientId</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ClientIDAndName">
+          <DataField>ClientIDAndName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Tablix1">
+            <TablixCorner>
+              <TablixCornerRows>
+                <TablixCornerRow>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox1">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Loc. Id</Value>
+                                <Style>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox1</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Green</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox4">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Location Name</Value>
+                                <Style>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox4</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Green</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox8">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Location</Value>
+                                <Style>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox8</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Green</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox6">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Employee Count</Value>
+                                <Style>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox6</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Green</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                </TablixCornerRow>
+              </TablixCornerRows>
+            </TablixCorner>
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>2.01389in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox5">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Standards.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox5</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="StartDateYear">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!AuditLocationStartYear.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!AuditLocationStartYear.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>0.25in</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox2">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!AuditLocationStartYear.Value</Value>
+                                <Style>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox2</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Green</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                </TablixMember>
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="ClientLocationName">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!ClientLocationName.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!ClientLocationId.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>0.72917in</Size>
+                    <CellContents>
+                      <Textbox Name="CombinedLocations">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!CombinedLocations.Value</Value>
+                                <Style />
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>CombinedLocations</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>2.52778in</Size>
+                        <CellContents>
+                          <Textbox Name="ClientLocationName">
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!ClientLocationName.Value</Value>
+                                    <Style>
+                                      <Color>=IIF (InStr(Fields!ClientLocationName.Value,"***") &gt; 0, "Red", "Black")</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <rd:DefaultName>ClientLocationName</rd:DefaultName>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                          <rd:Selected>true</rd:Selected>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>1.23333in</Size>
+                            <CellContents>
+                              <Textbox Name="PhysicalAddressCity">
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!PhysicalAddressCity.Value+","+Fields!StateProvinceCode.Value</Value>
+                                        <Style />
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <rd:DefaultName>PhysicalAddressCity</rd:DefaultName>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>1in</Size>
+                                <CellContents>
+                                  <Textbox Name="EmployeeCount">
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>=Fields!EmployeeCount.Value</Value>
+                                            <Style />
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <rd:DefaultName>EmployeeCount</rd:DefaultName>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>AuditLocationRollup</DataSetName>
+            <Top>0.06944in</Top>
+            <Left>0.1125in</Left>
+            <Height>0.5in</Height>
+            <Width>7.50417in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>1.18472in</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>11.5375in</Width>
+      <Page>
+        <PageHeader>
+          <Height>0.60833in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ReportTitle">
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>= Str(Parameters!cID.Value) + " - " + First(Fields!ClientName.Value, "AuditLocationRollup") + " Location Sampling Plan"</Value>
+                      <Style>
+                        <FontFamily>Verdana</FontFamily>
+                        <FontSize>20pt</FontSize>
+                      </Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+              <rd:DefaultName>ReportTitle</rd:DefaultName>
+              <Top>0.13889in</Top>
+              <Left>0.1125in</Left>
+              <Height>0.4in</Height>
+              <Width>11.09584in</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
+          <Style>
+            <Border>
+              <Style>None</Style>
+            </Border>
+          </Style>
+        </PageHeader>
+        <PageFooter>
+          <Height>0.49167in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ExecutionTime">
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Globals!ExecutionTime</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <rd:DefaultName>ExecutionTime</rd:DefaultName>
+              <Top>0.2in</Top>
+              <Left>5.25834in</Left>
+              <Height>0.25in</Height>
+              <Width>2in</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
+          <Style>
+            <Border>
+              <Style>None</Style>
+            </Border>
+          </Style>
+        </PageFooter>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="cID">
+      <DataType>String</DataType>
+      <Prompt>ClientId</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>Clients</DataSetName>
+          <ValueField>ClientID</ValueField>
+          <LabelField>ClientIDAndName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+    </ReportParameter>
+  </ReportParameters>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>457fe7d8-a348-49af-8cfb-f3ee27c6a0e3</rd:ReportID>
+</Report>

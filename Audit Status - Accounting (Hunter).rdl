@@ -1,0 +1,1930 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="TheHunter">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=OrionSrv02;Initial Catalog=TheHunter</ConnectString>
+        <Prompt>Enter a user name and password to access the data source:</Prompt>
+      </ConnectionProperties>
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <rd:DataSourceID>a22cc988-714c-453a-9fb3-bb2f8f22cf41</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="Hunter_Audit_Status">
+      <Query>
+        <DataSourceName>TheHunter</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@AuditId">
+            <Value>=Parameters!AuditId.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@HidePaid">
+            <Value>=Parameters!HidePaid.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH aat AS (SELECT        Row, AuditId, ClientId, ClientName, ClientLocationId, ClientLocationName, AuditorRoleName, AuditorName, StartDate, EndDate, WorkEffort, TotalWorkEffort, NoUniqueReport
+                             FROM            dbo.AuditorAuditTransmittal), cat AS
+    (SELECT        AuditId, ClientId, ClientName, ClientLocationId, ClientLocationName, PhysicalAddressLine1, PhysicalAddressLine2, PhysicalAddressCity, PhysicalAddressStateProvinceId, StateProvinceName, 
+                                PhysicalAddressPostalCode, LineAddress1, LineAddress2, CertificationScope, AuditLocationId, AuditLocationStandardId, StandardId, StandardName, DurationUnitOfMeasure, AuditTypeCode, AuditTypeName, 
+                                NoUniqueReport
+      FROM            dbo.ClientAuditTransmittal), ras AS
+    (SELECT        auditid, SchedulingCompleteDate, ClientInvoiceSentDate, ClientInvoicePaymentDate, ClientTransmittalSignDate, AuditorTransmittalSignDate, AuditorPrepCompleteDate, CertificateDraftCompleteDate, 
+                                AuditorReportCompleteDate, TechReviewCompleteDate, NonconformanceProcessDate, CertifierDecisionDate, AuditCompleteDate, LastChange, [Last Step Completed], [NCR Process Complete], 
+                                [Draft Verification Complete], [Client Payment Received]
+      FROM            dbo.ReportAuditStatus), calt AS
+    (SELECT        AuditId, AuditType
+      FROM            dbo.CombinedAuditLocationTypes), cali AS
+    (SELECT        AuditId, LocationIds
+      FROM            dbo.CombinedAuditLocationIds), cals AS
+    (SELECT        AuditId, Standards
+      FROM            dbo.CombinedAuditLocationStandards)
+    SELECT    dbo.Audit.AuditId AS AuditId2, dbo.Audit.ClientInvoiceSentDate AS [Client Inv. Sent], dbo.Audit.ClientInvoicePaymentDate AS [Client Inv. Paid], dbo.Audit.ClientId AS ClientId2, 
+                              dbo.Audit.ReportingAuditorId AS ReportingAuditorId2, dbo.Audit.ClientContactName AS ClientContactName2, dbo.Audit.ClientContact AS ClientContact2, dbo.Audit.TechReviewerContact AS TechReviewerContact2, 
+                              dbo.Audit.CertifierContact AS CertifierContact2, dbo.Audit.AuditCompleteDate AS AuditCompleteDate2, audit.AuditorReportCompleteDate, audit.TechReviewCompleteDate, client.ClientName AS [Client Name], NULL AS AuditActivitiesCompleteDate, NULL 
+                              AS AccountingCompleteDate, NULL AS PAWSReceivedDate, NULL AS AuditReportReceivedDate, NULL AS AuditReportSentToClientDate, 
+                              dbo.Audit.AuditReportQuality AS AuditReportQuality2, dbo.Audit.ClientTransmittalNote AS ClientTransmittalNote2, NULL AS ClientTransmittalSentDate, NULL AS ClientTransmittalReceivedDate, 
+                              dbo.Audit.ClientInvoiceSentDate AS ClientInvoiceSentDate2, NULL AS ClientInvoicePaidDate, dbo.Audit.SchedulingCompleteDate AS SchedulingCompleteDate2, dbo.Audit.IsInactive AS IsInactive2, 
+                              a1.FullName, aa.InvoiceSentDate, aa.InvoicePaidDate,
+							  dbo.Audit.DeactivatedDate AS DeactivatedDate2, dbo.Audit.DeactivatedBy AS DeactivatedBy2, dbo.Audit.CreatedDate AS CreatedDate2, dbo.Audit.CreatedBy AS CreatedBy2, 
+                              dbo.Audit.ModifiedDate AS ModifiedDate2, dbo.Audit.ModifiedBy AS ModifiedBy2, MIN(dbo.AuditLocationAuditor.StartDate) AS AuditStartDate2, MAX(dbo.AuditLocationAuditor.EndDate) AS AuditEndDate2, 
+                              CASE WHEN dbo.AuditLocationAuditor.EndDate &lt; '2015-01-01' THEN datename(year, dbo.AuditLocationAuditor.EndDate) ELSE datename(MONth, dbo.AuditLocationAuditor.EndDate) END AS Period, 
+                              ISNULL(MAX(CAST(dbo.AuditType.IsCertificatable AS int)), 0) AS IsCertificatable2, CAST(report.[Last Step Completed] AS varchar(255)) AS AuditWorkflowStatus2, report.[NCR Process Complete], 
+                              report.[Draft Verification Complete], report.[Client Payment Received], p.PartnerId AS PartnerId2, p.PartnerCode AS PartnerCode2, Stds.Standards AS Standards2, AuditTypes.AuditType AS AuditTypes2, 
+                              MAX(aat_1.WorkEffort) AS TotalWorkEffort2, dbo.AuditLocation.AuditLocationId, LocationIds.LocationIds AS AuditLocations2, auditor.FullName AS LeadAuditor2, CASE WHEN DateDiff(DAY, 
+                              MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 14 THEN CAST(1 AS bit) WHEN isnull(report.ClientTransmittalSignDate, '1/1/1900') = '1/1/1900' AND isnull(report.AuditorTransmittalSignDate, '1/1/1900') 
+                              = '1/1/1900' AND isnull(report.AuditorPrepCompleteDate, '1/1/1900') &lt;&gt; '1/1/1900' THEN CAST(0 AS bit) WHEN substring(report.[Last Step Completed], 0, 1) = 1 AND DateDiff(DAY, 
+                              report.ClientTransmittalSignDate, getdate()) &gt; 7 AND DateDiff(DAY, report.AuditorTransmittalSignDate, getdate()) &gt; 7 THEN CAST(1 AS bit) WHEN substring(report.[Last Step Completed], 0, 1) = 2 AND 
+                              DateDiff(DAY, getdate(), MIN(dbo.AuditLocationAuditor.StartDate)) &lt; 1 THEN CAST(1 AS bit) WHEN substring(report.[Last Step Completed], 0, 1) = 3 AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), 
+                              getdate()) &gt; 7 THEN CAST(1 AS bit) WHEN substring(report.[Last Step Completed], 0, 1) = 4 AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 14 THEN CAST(1 AS bit) 
+                              WHEN substring(report.[Last Step Completed], 0, 1) = 5 AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 14 THEN CAST(1 AS bit) WHEN substring(report.[Last Step Completed], 0, 1) 
+                              = 6 AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 14 THEN CAST(1 AS bit) WHEN [NCR Process Complete] = 'No' AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) 
+                              &gt; 7 THEN CAST(1 AS bit) WHEN [Draft Verification Complete] = 'No' AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 7 THEN CAST(1 AS bit) WHEN [Client Payment Received] = 'No' AND 
+                              DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 7 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS Overdue2
+							  ,iif((aa.InvoiceSentDate is not null and a1.doctostock=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) as AuditorReadyToBePaid, isnull(a1.DocToStock,0) as DocToStock, dbo.AuditLocation.clientlocationid
+     FROM            dbo.Audit LEFT JOIN
+                              dbo.AuditLocation ON dbo.Audit.AuditId = dbo.AuditLocation.AuditId AND dbo.AuditLocation.IsInactive = 0 LEFT JOIN
+                              dbo.AuditLocationAuditor ON dbo.AuditLocation.AuditLocationId = dbo.AuditLocationAuditor.AuditLocationId AND dbo.AuditLocationAuditor.IsInactive = 0 LEFT JOIN
+                              dbo.AuditLocationStandard ON dbo.AuditLocation.AuditLocationId = dbo.AuditLocationStandard.AuditLocationId AND dbo.AuditLocationStandard.IsInactive = 0 LEFT JOIN
+                              dbo.AuditType ON dbo.AuditLocationStandard.AuditTypeId = dbo.AuditType.AuditTypeId AND dbo.AuditType.IsInactive = 0 LEFT JOIN
+                              ras AS report ON report.auditid = dbo.Audit.AuditId LEFT JOIN
+                              dbo.ClientLocation AS clientlocation ON dbo.AuditLocation.ClientLocationId = clientlocation.ClientLocationId LEFT JOIN
+                              dbo.Client AS client ON clientlocation.ClientId = client.ClientId LEFT JOIN
+                              dbo.Partner AS p ON p.PartnerId = client.PartnerId LEFT JOIN
+                              dbo.Auditor AS auditor ON auditor.AuditorId = dbo.Audit.ReportingAuditorId LEFT JOIN
+                              cals AS Stds ON Stds.AuditId = dbo.Audit.AuditId LEFT JOIN
+                              calt AS AuditTypes ON AuditTypes.AuditId = dbo.Audit.AuditId LEFT JOIN
+                              cali AS LocationIds ON LocationIds.AuditId = dbo.Audit.AuditId LEFT JOIN
+                              aat AS aat_1 ON aat_1.AuditId = dbo.Audit.AuditId
+							left join auditor a1 on a1.FullName=aat_1.AuditorName
+							left join auditauditor aa on report.auditid=aa.AuditId and a1.AuditorId=aa.AuditorId
+where audit.IsInactive=0 and report.SchedulingCompleteDate is not null 
+and (Audit.AuditId=@AuditId or @AuditId is null) 
+and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and @HidePaid=1) or @HidePaid=0)
+     GROUP BY dbo.Audit.AuditId, dbo.Audit.ClientInvoiceSentDate, dbo.Audit.ClientInvoicePaymentDate, dbo.Audit.ClientId, client.ClientName, dbo.Audit.ReportingAuditorId, dbo.Audit.ClientContactName, 
+                              dbo.Audit.ClientContact, dbo.Audit.TechReviewerContact, dbo.Audit.CertifierContact, dbo.AuditLocationAuditor.EndDate, dbo.Audit.AuditReportQuality, dbo.Audit.ClientTransmittalNote, 
+                              dbo.Audit.ClientInvoiceSentDate, dbo.Audit.SchedulingCompleteDate, dbo.Audit.AuditCompleteDate, audit.AuditorReportCompleteDate, audit.TechReviewCompleteDate, report.[Last Step Completed], report.ClientTransmittalSignDate, report.AuditorTransmittalSignDate, 
+                              dbo.Audit.IsInactive, dbo.Audit.DeactivatedDate, dbo.Audit.DeactivatedBy, dbo.Audit.CreatedDate, dbo.Audit.CreatedBy, dbo.Audit.ModifiedDate, dbo.Audit.ModifiedBy, p.PartnerId, p.PartnerCode, 
+                              Stds.Standards, AuditTypes.AuditType, dbo.AuditLocation.AuditLocationId, LocationIds.LocationIds, auditor.FullName, report.[NCR Process Complete], report.[Draft Verification Complete], 
+                              report.[Client Payment Received], report.AuditorPrepCompleteDate,a1.FullName, aa.InvoiceSentDate, aa.InvoicePaidDate,iif((aa.InvoiceSentDate is not null and a1.doctostock=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) , a1.DocToStock, dbo.AuditLocation.clientlocationid</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="AuditId2">
+          <DataField>AuditId2</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Client_Inv__Sent">
+          <DataField>Client Inv. Sent</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Client_Inv__Paid">
+          <DataField>Client Inv. Paid</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="ClientId2">
+          <DataField>ClientId2</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ReportingAuditorId2">
+          <DataField>ReportingAuditorId2</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ClientContactName2">
+          <DataField>ClientContactName2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientContact2">
+          <DataField>ClientContact2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="TechReviewerContact2">
+          <DataField>TechReviewerContact2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CertifierContact2">
+          <DataField>CertifierContact2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AuditCompleteDate2">
+          <DataField>AuditCompleteDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="AuditorReportCompleteDate">
+          <DataField>AuditorReportCompleteDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="TechReviewCompleteDate">
+          <DataField>TechReviewCompleteDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Client_Name">
+          <DataField>Client Name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AuditActivitiesCompleteDate">
+          <DataField>AuditActivitiesCompleteDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AccountingCompleteDate">
+          <DataField>AccountingCompleteDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PAWSReceivedDate">
+          <DataField>PAWSReceivedDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AuditReportReceivedDate">
+          <DataField>AuditReportReceivedDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AuditReportSentToClientDate">
+          <DataField>AuditReportSentToClientDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AuditReportQuality2">
+          <DataField>AuditReportQuality2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientTransmittalNote2">
+          <DataField>ClientTransmittalNote2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ClientTransmittalSentDate">
+          <DataField>ClientTransmittalSentDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ClientTransmittalReceivedDate">
+          <DataField>ClientTransmittalReceivedDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ClientInvoiceSentDate2">
+          <DataField>ClientInvoiceSentDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="ClientInvoicePaidDate">
+          <DataField>ClientInvoicePaidDate</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="SchedulingCompleteDate2">
+          <DataField>SchedulingCompleteDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="IsInactive2">
+          <DataField>IsInactive2</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="FullName">
+          <DataField>FullName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceSentDate">
+          <DataField>InvoiceSentDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="InvoicePaidDate">
+          <DataField>InvoicePaidDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="DeactivatedDate2">
+          <DataField>DeactivatedDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="DeactivatedBy2">
+          <DataField>DeactivatedBy2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CreatedDate2">
+          <DataField>CreatedDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="CreatedBy2">
+          <DataField>CreatedBy2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ModifiedDate2">
+          <DataField>ModifiedDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="ModifiedBy2">
+          <DataField>ModifiedBy2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AuditStartDate2">
+          <DataField>AuditStartDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="AuditEndDate2">
+          <DataField>AuditEndDate2</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Period">
+          <DataField>Period</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="IsCertificatable2">
+          <DataField>IsCertificatable2</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AuditWorkflowStatus2">
+          <DataField>AuditWorkflowStatus2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="NCR_Process_Complete">
+          <DataField>NCR Process Complete</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Draft_Verification_Complete">
+          <DataField>Draft Verification Complete</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Client_Payment_Received">
+          <DataField>Client Payment Received</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PartnerId2">
+          <DataField>PartnerId2</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PartnerCode2">
+          <DataField>PartnerCode2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Standards2">
+          <DataField>Standards2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AuditTypes2">
+          <DataField>AuditTypes2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="TotalWorkEffort2">
+          <DataField>TotalWorkEffort2</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="AuditLocationId">
+          <DataField>AuditLocationId</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="AuditLocations2">
+          <DataField>AuditLocations2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="LeadAuditor2">
+          <DataField>LeadAuditor2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Overdue2">
+          <DataField>Overdue2</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="AuditorReadyToBePaid">
+          <DataField>AuditorReadyToBePaid</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="DocToStock">
+          <DataField>DocToStock</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="clientlocationid">
+          <DataField>clientlocationid</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Tablix1">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>0.6887in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.92361in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.41667in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.16894in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.90625in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.90625in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.79167in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.25in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.59041in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox4">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Loc ID</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox4</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                        <rd:Selected>true</rd:Selected>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox1">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!ClientId2.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Client ID</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox2">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!Client_Name.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Client</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox3">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!AuditId2.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Audit ID</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox3</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox10">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Type</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox10</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox5">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Standard</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox5</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox6">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!AuditStartDate2.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Start</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox6</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox8">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!AuditEndDate2.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Finish</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox8</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox14">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Total Work Effort</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox14</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox19">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Client Inv. Sent</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox19</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox9">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Client Inv. Payment</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox9</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox54">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Auditor</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox54</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox17">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Aud. Inv. Sent</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox17</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox42">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Doc To Stock</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox42</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox48">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=IIf(Fields!AuditorReadyToBePaid.Value=1,"Yes","No")</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Ready To  Be Paid*</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox48</rd:DefaultName>
+                          <ToolTip>Logic: (AudInvSent &amp; DocToStock &amp; AudRptComp = True) or (AudInvSent &amp; AudRptComp &amp; TRComp = True)</ToolTip>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox20">
+                          <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!AuditorReportCompleteDate.Value</SortExpression>
+                          </UserSort>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Aud. Rpt. Complete</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox20</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox22">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>TR Complete</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox22</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox36">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Aud. Inv. Paid </Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox36</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox13">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Tech. Reviewer</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <FontSize>11pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox13</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#7292cc</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Green</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="clientlocationid">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!clientlocationid.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>clientlocationid</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="ClientId2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!ClientId2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>ClientId2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Client_Name">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Client_Name.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Client_Name</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditId2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AuditId2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditId2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditTypes2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AuditTypes2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditTypes2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Standards21">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Standards2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Standards21</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditStartDate2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AuditStartDate2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditStartDate2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditEndDate2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AuditEndDate2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditEndDate2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="TotalWorkEffort2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!TotalWorkEffort2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>TotalWorkEffort2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Client_Inv__Sent">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Client_Inv__Sent.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Client_Inv__Sent</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>LightGrey</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Client_Inv__Paid">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Client_Inv__Paid.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Client_Inv__Paid</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>LightGrey</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="FullName">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!FullName.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>FullName</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="InvoiceSentDate">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!InvoiceSentDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>InvoiceSentDate</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DocToStock">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!DocToStock.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>DocToStock</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditorReadyToBePaid1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=IIf(Fields!AuditorReadyToBePaid.Value=1,"Yes","No")</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditorReadyToBePaid1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AuditorReportCompleteDate">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AuditorReportCompleteDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AuditorReportCompleteDate</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="TechReviewCompleteDate">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!TechReviewCompleteDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>TechReviewCompleteDate</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="InvoicePaidDate">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!InvoicePaidDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Format>d</Format>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>InvoicePaidDate</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="TechReviewerContact2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!TechReviewerContact2.Value</Value>
+                                  <Style>
+                                    <FontFamily>Tahoma</FontFamily>
+                                    <Color>#4d4d4d</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>TechReviewerContact2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>#e5e5e5</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <KeepWithGroup>After</KeepWithGroup>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="Details" />
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <RepeatColumnHeaders>true</RepeatColumnHeaders>
+            <RepeatRowHeaders>true</RepeatRowHeaders>
+            <FixedColumnHeaders>true</FixedColumnHeaders>
+            <FixedRowHeaders>true</FixedRowHeaders>
+            <DataSetName>Hunter_Audit_Status</DataSetName>
+            <Filters>
+              <Filter>
+                <FilterExpression>=Fields!AuditStartDate2.Value</FilterExpression>
+                <Operator>LessThanOrEqual</Operator>
+                <FilterValues>
+                  <FilterValue>=Parameters!EndDate.Value</FilterValue>
+                </FilterValues>
+              </Filter>
+            </Filters>
+            <Height>0.84041in</Height>
+            <Width>22.05209in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>1.19027in</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>22.05209in</Width>
+      <Page>
+        <PageFooter>
+          <Height>0.45in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ExecutionTime">
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Globals!ExecutionTime</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <rd:DefaultName>ExecutionTime</rd:DefaultName>
+              <Top>0.2in</Top>
+              <Left>19.87848in</Left>
+              <Height>0.25in</Height>
+              <Width>2in</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
+          <Style>
+            <Border>
+              <Style>None</Style>
+            </Border>
+          </Style>
+        </PageFooter>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="AuditId">
+      <DataType>Integer</DataType>
+      <Nullable>true</Nullable>
+      <DefaultValue>
+        <Values>
+          <Value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" />
+        </Values>
+      </DefaultValue>
+      <Prompt>AuditId</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="HidePaid">
+      <DataType>Boolean</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>true</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Hide Client/Auditor Paid</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="EndDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=Today()</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>End Date:</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>457fe7d8-a348-49af-8cfb-f3ee27c6a0e3</rd:ReportID>
+</Report>

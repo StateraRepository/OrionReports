@@ -6,7 +6,6 @@
       <ConnectionProperties>
         <DataProvider>SQL</DataProvider>
         <ConnectString>Data Source=OrionSrv02;Initial Catalog=TheHunter</ConnectString>
-        <Prompt>Enter a user name and password to access the data source:</Prompt>
       </ConnectionProperties>
       <rd:SecurityType>DataBase</rd:SecurityType>
       <rd:DataSourceID>a22cc988-714c-453a-9fb3-bb2f8f22cf41</rd:DataSourceID>
@@ -62,7 +61,7 @@
                               = 6 AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 14 THEN CAST(1 AS bit) WHEN [NCR Process Complete] = 'No' AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) 
                               &gt; 7 THEN CAST(1 AS bit) WHEN [Draft Verification Complete] = 'No' AND DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 7 THEN CAST(1 AS bit) WHEN [Client Payment Received] = 'No' AND 
                               DateDiff(DAY, MAX(dbo.AuditLocationAuditor.EndDate), getdate()) &gt; 7 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS Overdue2
-							  ,iif((aa.InvoiceSentDate is not null and a1.doctostock=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) as AuditorReadyToBePaid, isnull(a1.DocToStock,0) as DocToStock, dbo.AuditLocation.clientlocationid
+							  ,iif((aa.InvoiceSentDate is not null and a1.payImmediate=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) as AuditorReadyToBePaid, isnull(a1.PayImmediate,0) as PayImmediate, dbo.AuditLocation.clientlocationid
      FROM            dbo.Audit LEFT JOIN
                               dbo.AuditLocation ON dbo.Audit.AuditId = dbo.AuditLocation.AuditId AND dbo.AuditLocation.IsInactive = 0 LEFT JOIN
                               dbo.AuditLocationAuditor ON dbo.AuditLocation.AuditLocationId = dbo.AuditLocationAuditor.AuditLocationId AND dbo.AuditLocationAuditor.IsInactive = 0 LEFT JOIN
@@ -87,7 +86,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                               dbo.Audit.ClientInvoiceSentDate, dbo.Audit.SchedulingCompleteDate, dbo.Audit.AuditCompleteDate, audit.AuditorReportCompleteDate, audit.TechReviewCompleteDate, report.[Last Step Completed], report.ClientTransmittalSignDate, report.AuditorTransmittalSignDate, 
                               dbo.Audit.IsInactive, dbo.Audit.DeactivatedDate, dbo.Audit.DeactivatedBy, dbo.Audit.CreatedDate, dbo.Audit.CreatedBy, dbo.Audit.ModifiedDate, dbo.Audit.ModifiedBy, p.PartnerId, p.PartnerCode, 
                               Stds.Standards, AuditTypes.AuditType, dbo.AuditLocation.AuditLocationId, LocationIds.LocationIds, auditor.FullName, report.[NCR Process Complete], report.[Draft Verification Complete], 
-                              report.[Client Payment Received], report.AuditorPrepCompleteDate,a1.FullName, aa.InvoiceSentDate, aa.InvoicePaidDate,iif((aa.InvoiceSentDate is not null and a1.doctostock=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) , a1.DocToStock, dbo.AuditLocation.clientlocationid</CommandText>
+                              report.[Client Payment Received], report.AuditorPrepCompleteDate,a1.FullName, aa.InvoiceSentDate, aa.InvoicePaidDate,iif((aa.InvoiceSentDate is not null and a1.PayImmediate=1 and audit.AuditorReportCompleteDate is not null) or (aa.InvoiceSentDate is not null and audit.AuditorReportCompleteDate is not null and report.TechReviewCompleteDate is not null),1,0) , a1.PayImmediate, dbo.AuditLocation.clientlocationid</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -303,8 +302,8 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
           <DataField>AuditorReadyToBePaid</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
-        <Field Name="DocToStock">
-          <DataField>DocToStock</DataField>
+        <Field Name="PayImmediate">
+          <DataField>PayImmediate</DataField>
           <rd:TypeName>System.Boolean</rd:TypeName>
         </Field>
         <Field Name="clientlocationid">
@@ -361,7 +360,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                   <Width>1in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1in</Width>
+                  <Width>0.69167in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1in</Width>
@@ -419,7 +418,6 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -890,7 +888,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Doc To Stock</Value>
+                                  <Value>Pay Immed</Value>
                                   <Style>
                                     <FontFamily>Tahoma</FontFamily>
                                     <FontSize>11pt</FontSize>
@@ -1569,14 +1567,14 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="DocToStock">
+                        <Textbox Name="PayImmediate">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!DocToStock.Value</Value>
+                                  <Value>=IIF(Fields!PayImmediate.Value="True","Yes","")</Value>
                                   <Style>
                                     <FontFamily>Tahoma</FontFamily>
                                     <Color>#4d4d4d</Color>
@@ -1586,7 +1584,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>DocToStock</rd:DefaultName>
+                          <rd:DefaultName>PayImmediate</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>#e5e5e5</Color>
@@ -1609,7 +1607,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIf(Fields!AuditorReadyToBePaid.Value=1,"Yes","No")</Value>
+                                  <Value>=IIf(Fields!AuditorReadyToBePaid.Value=1,"Yes","")</Value>
                                   <Style>
                                     <FontFamily>Tahoma</FontFamily>
                                     <Color>#4d4d4d</Color>
@@ -1633,6 +1631,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
+                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -1826,7 +1825,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
               </Filter>
             </Filters>
             <Height>0.84041in</Height>
-            <Width>22.05209in</Width>
+            <Width>21.74376in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1834,7 +1833,7 @@ and (((audit.ClientInvoicePaymentDate is null or aa.InvoicePaidDate is null) and
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>1.19027in</Height>
+        <Height>1.1986in</Height>
         <Style>
           <Border>
             <Style>None</Style>
